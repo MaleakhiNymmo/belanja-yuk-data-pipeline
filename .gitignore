@@ -1,0 +1,31 @@
+# Airflow logs — banyak & auto-generated, jangan di-commit
+logs/
+# Volume data lokal
+data/raw/
+
+# Environment file — berisi secrets!
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+dist/
+build/
+.pytest_cache/
+
+# dbt artifacts — generate ulang setiap run
+dbt/belanja_yuk/target/
+dbt/belanja_yuk/dbt_packages/
+dbt/belanja_yuk/.user.yml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp

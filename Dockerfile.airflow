@@ -1,0 +1,24 @@
+# ============================================================
+# Custom Airflow Image untuk Belanja Yuk Data Pipeline
+# Base: official apache/airflow:2.9.3
+# Tambahan: dbt-core, psycopg2, faker, pytest, dll
+# ============================================================
+
+FROM apache/airflow:2.9.3
+
+USER root
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+USER airflow
+
+# Copy requirements dulu (untuk layer caching)
+COPY requirements.txt /requirements.txt
+
+# Install semua Python dependencies
+RUN pip install --no-cache-dir -r /requirements.txt

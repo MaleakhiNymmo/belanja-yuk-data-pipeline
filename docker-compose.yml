@@ -1,0 +1,164 @@
+version: "3.8"
+
+# ============================================================
+# Belanja Yuk — Data Pipeline Infrastructure
+# 
+# Port mapping (sengaja beda dari Astro default biar bisa
+# jalan bersamaan tanpa konflik):
+#   Airflow UI  → localhost:8081  (Astro default: 8080)
+#   Postgres DWH → localhost:5433  (Astro default: 5432)
+#   Flower      → localhost:5556
+# ============================================================
+
+x-airflow-common: &airflow-common
+  build:
+    context: .
+    dockerfile: Dockerfile.airflow
+  environment: &airflow-common-env
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${AIRFLOW_DB_USER}:${AIRFLOW_DB_PASSWORD}@postgres_meta/${AIRFLOW_DB_NAME}
+    AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW__CORE__FERNET_KEY}
+    AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW__WEBSERVER__SECRET_KEY}
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "true"
+    AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+    AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: "true"
+    # --- Koneksi ke Data Warehouse Postgres ---
+    DWH_POSTGRES_USER: ${DWH_POSTGRES_USER}
+    DWH_POSTGRES_PASSWORD: ${DWH_POSTGRES_PASSWORD}
+    DWH_POSTGRES_DB: ${DWH_POSTGRES_DB}
+    DWH_POSTGRES_HOST: ${DWH_POSTGRES_HOST}
+    DWH_POSTGRES_PORT: ${DWH_POSTGRES_PORT}
+    # --- Slack ---
+    SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL}
+    # --- dbt ---
+    DBT_PROFILES_DIR: ${DBT_PROFILES_DIR}
+    DBT_PROJECT_DIR: ${DBT_PROJECT_DIR}
+  volumes:
+    - ./dags:/opt/airflow/dags
+    - ./logs:/opt/airflow/logs
+    - ./plugins:/opt/airflow/plugins
+    - ./data:/opt/airflow/data          # raw CSV/JSON source files
+    - ./dbt:/opt/airflow/dbt            # dbt project
+    - ./scripts:/opt/airflow/scripts    # helper scripts
+  depends_on:
+    postgres_meta:
+      condition: service_healthy
+  networks:
+    - belanja_yuk_net
+
+services:
+  # ----------------------------------------------------------
+  # Postgres #1 — Airflow Metadata DB
+  # ----------------------------------------------------------
+  postgres_meta:
+    image: postgres:15
+    container_name: byk_postgres_meta
+    environment:
+      POSTGRES_USER: ${AIRFLOW_DB_USER}
+      POSTGRES_PASSWORD: ${AIRFLOW_DB_PASSWORD}
+      POSTGRES_DB: ${AIRFLOW_DB_NAME}
+    volumes:
+      - postgres_meta_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${AIRFLOW_DB_USER}"]
+      interval: 10s
+      retries: 5
+      start_period: 5s
+    networks:
+      - belanja_yuk_net
+
+  # ----------------------------------------------------------
+  # Postgres #2 — Data Warehouse (raw + staging + marts)
+  # Port 5433 keluar ke host — beda dari Astro default (5432)
+  # ----------------------------------------------------------
+  postgres_dwh:
+    image: postgres:15
+    container_name: byk_postgres_dwh
+    environment:
+      POSTGRES_USER: ${DWH_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${DWH_POSTGRES_PASSWORD}
+      POSTGRES_DB: ${DWH_POSTGRES_DB}
+    volumes:
+      - postgres_dwh_data:/var/lib/postgresql/data
+      - ./infra/sql/init_schemas.sql:/docker-entrypoint-initdb.d/init_schemas.sql
+    ports:
+      - "5433:5432"    # <-- port host 5433, bukan 5432
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${DWH_POSTGRES_USER}"]
+      interval: 10s
+      retries: 5
+      start_period: 5s
+    networks:
+      - belanja_yuk_net
+    hostname: ${DWH_POSTGRES_HOST}
+
+  # ----------------------------------------------------------
+  # Airflow Init — buat user admin & migrate DB
+  # ----------------------------------------------------------
+  airflow-init:
+    <<: *airflow-common
+    container_name: byk_airflow_init
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        airflow db migrate
+        airflow users create \
+          --username admin \
+          --firstname Admin \
+          --lastname User \
+          --role Admin \
+          --email admin@belanjayuk.local \
+          --password admin
+    depends_on:
+      postgres_meta:
+        condition: service_healthy
+
+  # ----------------------------------------------------------
+  # Airflow Webserver — UI di port 8081
+  # ----------------------------------------------------------
+  airflow-webserver:
+    <<: *airflow-common
+    container_name: byk_airflow_webserver
+    command: webserver
+    ports:
+      - "8081:8080"    # <-- port host 8081, bukan 8080
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+      postgres_dwh:
+        condition: service_healthy
+
+  # ----------------------------------------------------------
+  # Airflow Scheduler
+  # ----------------------------------------------------------
+  airflow-scheduler:
+    <<: *airflow-common
+    container_name: byk_airflow_scheduler
+    command: scheduler
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8974/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+      postgres_dwh:
+        condition: service_healthy
+
+volumes:
+  postgres_meta_data:
+  postgres_dwh_data:
+
+networks:
+  belanja_yuk_net:
+    name: belanja_yuk_net
+    driver: bridge
