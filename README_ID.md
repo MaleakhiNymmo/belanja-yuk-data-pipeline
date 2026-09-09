@@ -1,6 +1,6 @@
 # Belanja Yuk Data Pipeline
 
-[![CI Pipeline](https://github.com/your-username/belanja-yuk-pipeline/actions/workflows/ci.yml/badge.svg)](https://github.com/your-username/belanja-yuk-pipeline/actions/workflows/ci.yml)
+[![CI Pipeline](https://github.com/MaleakhiNymmo/belanja-yuk-data-pipeline/actions/workflows/ci.yml/badge.svg)](https://github.com/MaleakhiNymmo/belanja-yuk-data-pipeline/actions/workflows/ci.yml)
 [![Airflow](https://img.shields.io/badge/Airflow-3.3.1-017CEE?logo=apache-airflow&logoColor=white)](https://airflow.apache.org/)
 [![Astro Runtime](https://img.shields.io/badge/Astro_Runtime-3.3--6-7B42BC)](https://www.astronomer.io/)
 [![dbt-core](https://img.shields.io/badge/dbt--core-1.8.2-FF694B?logo=dbt&logoColor=white)](https://www.getdbt.com/)

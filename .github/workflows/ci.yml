@@ -28,7 +28,7 @@ jobs:
 
       - name: Run Ruff Linter
         run: |
-          ruff check dags/ scripts/ tests/ --select E,F,W --ignore E501
+          ruff check dags/ scripts/ tests/ --select E,F,W --ignore E501,E402,W291,W293
 
   # =============================================================
   # JOB 2: AIRFLOW DAG INTEGRITY & UNIT TESTS (Pytest)

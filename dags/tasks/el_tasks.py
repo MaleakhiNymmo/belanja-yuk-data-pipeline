@@ -16,13 +16,13 @@ Prinsip ELT:
 """
 
 import glob
-import json
 import logging
 import os
 from datetime import datetime, timezone
 from pathlib import Path
+
 import psycopg2
-from psycopg2.extras import execute_values, Json
+from psycopg2.extras import Json, execute_values
 from pymongo import MongoClient
 
 log = logging.getLogger(__name__)
@@ -30,6 +30,7 @@ log = logging.getLogger(__name__)
 # =============================================================
 # DATABASE CONNECTIONS
 # =============================================================
+
 
 def get_dwh_conn():
     """Koneksi ke PostgreSQL Data Warehouse."""
@@ -65,6 +66,7 @@ def get_mongo_collection(collection_name: str = "orders"):
 # =============================================================
 # 1. EXTRACT & LOAD: CUSTOMERS (CSV -> Postgres raw.customers)
 # =============================================================
+
 
 def extract_load_customers(**context) -> int:
     """
@@ -108,22 +110,25 @@ def extract_load_customers(**context) -> int:
         source_name = Path(latest_file).name
 
         import csv
+
         records = []
         with open(latest_file, "r", encoding="utf-8") as f:
             reader = csv.DictReader(f)
             for row in reader:
-                records.append((
-                    row.get("customer_id"),
-                    row.get("full_name"),
-                    row.get("email"),
-                    row.get("city"),
-                    row.get("signup_date"),
-                    row.get("segment"),
-                    row.get("phone"),
-                    row.get("gender"),
-                    source_name,
-                    loaded_at
-                ))
+                records.append(
+                    (
+                        row.get("customer_id"),
+                        row.get("full_name"),
+                        row.get("email"),
+                        row.get("city"),
+                        row.get("signup_date"),
+                        row.get("segment"),
+                        row.get("phone"),
+                        row.get("gender"),
+                        source_name,
+                        loaded_at,
+                    )
+                )
 
         insert_query = """
             INSERT INTO raw.customers (
@@ -149,6 +154,7 @@ def extract_load_customers(**context) -> int:
 # =============================================================
 # 2. EXTRACT & LOAD: PRODUCTS (CSV -> Postgres raw.products)
 # =============================================================
+
 
 def extract_load_products(**context) -> int:
     """
@@ -193,23 +199,26 @@ def extract_load_products(**context) -> int:
         source_name = Path(latest_file).name
 
         import csv
+
         records = []
         with open(latest_file, "r", encoding="utf-8") as f:
             reader = csv.DictReader(f)
             for row in reader:
-                records.append((
-                    row.get("product_id"),
-                    row.get("sku"),
-                    row.get("product_name"),
-                    row.get("category"),
-                    row.get("price"),
-                    row.get("cost"),
-                    row.get("stock_qty"),
-                    row.get("weight_gram"),
-                    row.get("is_active"),
-                    source_name,
-                    loaded_at
-                ))
+                records.append(
+                    (
+                        row.get("product_id"),
+                        row.get("sku"),
+                        row.get("product_name"),
+                        row.get("category"),
+                        row.get("price"),
+                        row.get("cost"),
+                        row.get("stock_qty"),
+                        row.get("weight_gram"),
+                        row.get("is_active"),
+                        source_name,
+                        loaded_at,
+                    )
+                )
 
         insert_query = """
             INSERT INTO raw.products (
@@ -235,6 +244,7 @@ def extract_load_products(**context) -> int:
 # =============================================================
 # 3. EXTRACT & LOAD: ORDERS (MongoDB -> Postgres raw.orders)
 # =============================================================
+
 
 def extract_load_orders(**context) -> int:
     """
@@ -289,23 +299,27 @@ def extract_load_orders(**context) -> int:
         """
 
         for doc in cursor:
-            batch.append((
-                doc.get("order_id"),
-                doc.get("customer_id"),
-                doc.get("order_date"),
-                doc.get("status"),
-                doc.get("payment_method"),
-                doc.get("channel"),
-                doc.get("total_amount"),
-                Json(doc.get("items", [])),  # psycopg2 Json adapter -> JSONB
-                "mongodb",
-                loaded_at
-            ))
+            batch.append(
+                (
+                    doc.get("order_id"),
+                    doc.get("customer_id"),
+                    doc.get("order_date"),
+                    doc.get("status"),
+                    doc.get("payment_method"),
+                    doc.get("channel"),
+                    doc.get("total_amount"),
+                    Json(doc.get("items", [])),  # psycopg2 Json adapter -> JSONB
+                    "mongodb",
+                    loaded_at,
+                )
+            )
 
             if len(batch) >= batch_size:
                 execute_values(cur, insert_query, batch, page_size=batch_size)
                 total_loaded += len(batch)
-                log.info(f"  → Loaded {total_loaded:,}/{total_docs:,} orders ke raw.orders ...")
+                log.info(
+                    f"  → Loaded {total_loaded:,}/{total_docs:,} orders ke raw.orders ..."
+                )
                 batch = []
 
         if batch:
@@ -313,7 +327,9 @@ def extract_load_orders(**context) -> int:
             total_loaded += len(batch)
 
         conn.commit()
-        log.info(f"✅ Sukses me-load {total_loaded:,} baris ke raw.orders (JSONB preserved)")
+        log.info(
+            f"✅ Sukses me-load {total_loaded:,} baris ke raw.orders (JSONB preserved)"
+        )
         return total_loaded
 
     except Exception as e:

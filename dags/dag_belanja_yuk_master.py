@@ -12,27 +12,25 @@ Arsitektur Orkestrasi:
 =============================================================
 """
 
-from datetime import datetime, timedelta
 import glob
 import logging
 import os
+from datetime import datetime, timedelta
 from pathlib import Path
 
 from airflow import DAG
-from airflow.operators.empty import EmptyOperator
-from airflow.operators.python import PythonOperator, BranchPythonOperator
 from airflow.operators.bash import BashOperator
+from airflow.operators.empty import EmptyOperator
+from airflow.operators.python import BranchPythonOperator, PythonOperator
 from airflow.sensors.python import PythonSensor
 from airflow.utils.task_group import TaskGroup
-from airflow.utils.trigger_rule import TriggerRule
-
+from callbacks.slack_alert import slack_alert_on_failure
 from tasks.el_tasks import (
     extract_load_customers,
-    extract_load_products,
     extract_load_orders,
+    extract_load_products,
     get_dwh_conn,
 )
-from callbacks.slack_alert import slack_alert_on_failure
 
 log = logging.getLogger(__name__)
 
@@ -49,6 +47,7 @@ default_args = {
 # =============================================================
 # SENSOR CALLABLES
 # =============================================================
+
 
 def check_customers_file_exists() -> bool:
     """Sensor: cek apakah file CSV customers sudah ada di landing zone."""
@@ -70,6 +69,7 @@ def check_products_file_exists() -> bool:
 # BRANCHING LOGIC
 # =============================================================
 
+
 def evaluate_file_validity(**context) -> str:
     """
     Branching logic: cek ukuran file CSV.
@@ -86,7 +86,9 @@ def evaluate_file_validity(**context) -> str:
             log.warning(f"⚠️ File {fpath} kosong (0 byte)! Melewati pipeline...")
             return "skip_pipeline"
 
-    log.info("✅ Semua file source valid dan memiliki ukuran. Melanjutkan ke Extract & Load.")
+    log.info(
+        "✅ Semua file source valid dan memiliki ukuran. Melanjutkan ke Extract & Load."
+    )
     return "proceed_to_el"
 
 
@@ -94,19 +96,22 @@ def evaluate_file_validity(**context) -> str:
 # QUALITY GATE & SUMMARY
 # =============================================================
 
+
 def verify_raw_data_quality(**context):
     """Quality gate: memastikan tabel raw terisi data."""
     conn = get_dwh_conn()
     cur = conn.cursor()
     tables = ["customers", "products", "orders"]
-    
+
     try:
         for t in tables:
             cur.execute(f"SELECT COUNT(*) FROM raw.{t};")
             cnt = cur.fetchone()[0]
             log.info(f"📊 raw.{t} row count: {cnt:,}")
             if cnt == 0:
-                raise ValueError(f"CRITICAL: Tabel raw.{t} kosong! Pipeline dihentikan.")
+                raise ValueError(
+                    f"CRITICAL: Tabel raw.{t} kosong! Pipeline dihentikan."
+                )
         log.info("✅ Quality Check Passed: Data raw lengkap.")
     finally:
         cur.close()
@@ -117,19 +122,19 @@ def generate_pipeline_summary(**context):
     """Mencatat ringkasan performa data marts ke log."""
     conn = get_dwh_conn()
     cur = conn.cursor()
-    
+
     try:
         cur.execute("SELECT COUNT(*) FROM marts.dim_customers;")
         total_customers = cur.fetchone()[0]
-        
+
         cur.execute("SELECT COUNT(*) FROM marts.dim_products;")
         total_products = cur.fetchone()[0]
-        
+
         cur.execute("SELECT COUNT(*) FROM marts.fact_order_items;")
         total_order_items = cur.fetchone()[0]
-        
+
         cur.execute("""
-            SELECT 
+            SELECT
                 ROUND(SUM(gross_revenue_idr))::BIGINT,
                 ROUND(SUM(net_profit_idr))::BIGINT
             FROM marts.fct_daily_sales;
@@ -162,7 +167,6 @@ with DAG(
     catchup=False,
     tags=["belanja_yuk", "master", "sensors", "branching", "dbt"],
 ) as dag:
-
     # --- 1. SENSORS ---
     sensor_customers = PythonSensor(
         task_id="sensor_wait_for_customers_csv",
@@ -195,7 +199,9 @@ with DAG(
     )
 
     # --- 3. TASKGROUP: EXTRACT & LOAD ---
-    with TaskGroup("extract_and_load", tooltip="Extract raw sources to Postgres") as el_group:
+    with TaskGroup(
+        "extract_and_load", tooltip="Extract raw sources to Postgres"
+    ) as el_group:
         task_el_cust = PythonOperator(
             task_id="el_customers_crm",
             python_callable=extract_load_customers,
@@ -218,7 +224,9 @@ with DAG(
     )
 
     # --- 5. TASKGROUP: DBT TRANSFORMATIONS (GRANULAR) ---
-    with TaskGroup("dbt_transformations", tooltip="Run dbt layer by layer") as dbt_group:
+    with TaskGroup(
+        "dbt_transformations", tooltip="Run dbt layer by layer"
+    ) as dbt_group:
         dbt_staging = BashOperator(
             task_id="dbt_run_staging",
             bash_command="cd /opt/airflow/dbt/belanja_yuk && dbt run --select staging",
@@ -253,5 +261,5 @@ with DAG(
     # =========================================================
     [sensor_customers, sensor_products] >> branch_check_files
     branch_check_files >> [proceed_to_el, skip_pipeline]
-    
+
     proceed_to_el >> el_group >> task_quality_gate >> dbt_group >> task_summary

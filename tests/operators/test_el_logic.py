@@ -8,9 +8,8 @@ yang digunakan pada tahap Extract & Load serta Staging.
 """
 
 import re
-import pytest
 
-EMAIL_REGEX = r'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'
+EMAIL_REGEX = r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$"
 
 
 def is_valid_email(email: str) -> bool:
@@ -34,12 +33,12 @@ def test_valid_emails():
 
 def test_invalid_dirty_emails():
     """Menguji dirty emails yang sengaja di-inject oleh Faker."""
-    assert is_valid_email("budi@@gmail.com") is False      # double @
-    assert is_valid_email("budi_tanpa_at.com") is False     # missing @
-    assert is_valid_email("budi@domain") is False           # missing TLD
-    assert is_valid_email("   budi@gmail.com") is True     # handled by strip
-    assert is_valid_email("") is False                      # empty string
-    assert is_valid_email(None) is False                    # null email
+    assert is_valid_email("budi@@gmail.com") is False  # double @
+    assert is_valid_email("budi_tanpa_at.com") is False  # missing @
+    assert is_valid_email("budi@domain") is False  # missing TLD
+    assert is_valid_email("   budi@gmail.com") is True  # handled by strip
+    assert is_valid_email("") is False  # empty string
+    assert is_valid_email(None) is False  # null email
 
 
 def test_stock_hygiene():

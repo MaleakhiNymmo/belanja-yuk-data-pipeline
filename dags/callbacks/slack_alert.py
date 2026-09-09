@@ -10,9 +10,10 @@ Mendukung:
 =============================================================
 """
 
-import os
 import json
 import logging
+import os
+
 import requests
 
 log = logging.getLogger("airflow.task")
@@ -24,23 +25,23 @@ def format_slack_failure_message(context: dict) -> dict:
     """
     dag = context.get("dag")
     ti = context.get("task_instance")
-    
+
     dag_id = dag.dag_id if dag else "unknown_dag"
     task_id = ti.task_id if ti else "unknown_task"
-    
+
     # Resolusi execution date / logical date
     execution_date = context.get("ts") or str(context.get("logical_date", "N/A"))
-    
+
     # Resolusi task log URL
     log_url = ti.log_url if ti and hasattr(ti, "log_url") else "http://localhost:8081"
-    
+
     # Resolusi exception message
     exception = context.get("exception")
     if exception:
         error_msg = str(exception)
     else:
         error_msg = "Task encountered an error without explicit exception trace."
-        
+
     # Pangkas jika pesan error terlalu panjang untuk Slack block
     if len(error_msg) > 350:
         error_msg = error_msg[:347] + "..."
@@ -53,8 +54,8 @@ def format_slack_failure_message(context: dict) -> dict:
                 "text": {
                     "type": "plain_text",
                     "text": "🚨 Airflow Pipeline Task Failure Alert",
-                    "emoji": True
-                }
+                    "emoji": True,
+                },
             },
             {
                 "type": "section",
@@ -62,28 +63,35 @@ def format_slack_failure_message(context: dict) -> dict:
                     {"type": "mrkdwn", "text": f"*DAG ID:*\n`{dag_id}`"},
                     {"type": "mrkdwn", "text": f"*Task ID:*\n`{task_id}`"},
                     {"type": "mrkdwn", "text": f"*Logical Date:*\n{execution_date}"},
-                    {"type": "mrkdwn", "text": f"*Environment:*\n`Production / Local DWH`"}
-                ]
+                    {
+                        "type": "mrkdwn",
+                        "text": "*Environment:*\n`Production / Local DWH`",
+                    },
+                ],
             },
             {
                 "type": "section",
                 "text": {
                     "type": "mrkdwn",
-                    "text": f"*Error Trace:*\n```{error_msg}```"
-                }
+                    "text": f"*Error Trace:*\n```{error_msg}```",
+                },
             },
             {
                 "type": "actions",
                 "elements": [
                     {
                         "type": "button",
-                        "text": {"type": "plain_text", "text": "🔍 Open Task Logs in Airflow", "emoji": True},
+                        "text": {
+                            "type": "plain_text",
+                            "text": "🔍 Open Task Logs in Airflow",
+                            "emoji": True,
+                        },
                         "url": log_url,
-                        "style": "danger"
+                        "style": "danger",
                     }
-                ]
-            }
-        ]
+                ],
+            },
+        ],
     }
     return payload
 
@@ -91,12 +99,12 @@ def format_slack_failure_message(context: dict) -> dict:
 def slack_alert_on_failure(context: dict) -> None:
     """
     Airflow on_failure_callback function.
-    
+
     Dijalankan otomatis oleh worker Airflow saat task status berubah menjadi FAILED.
     """
     webhook_url = os.environ.get("SLACK_WEBHOOK_URL", "").strip()
     payload = format_slack_failure_message(context)
-    
+
     dag_id = context.get("dag").dag_id if context.get("dag") else "unknown"
     ti = context.get("task_instance")
     task_id = ti.task_id if ti else "unknown"
@@ -127,7 +135,9 @@ def slack_alert_on_failure(context: dict) -> None:
             if resp.status_code == 200:
                 log.info("✅ Slack alert successfully dispatched to channel!")
             else:
-                log.warning(f"⚠️ Slack webhook returned non-200 status: {resp.status_code} - {resp.text}")
+                log.warning(
+                    f"⚠️ Slack webhook returned non-200 status: {resp.status_code} - {resp.text}"
+                )
         except Exception as e:
             log.error(f"❌ Failed to deliver webhook request to Slack: {e}")
     else:

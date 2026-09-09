@@ -18,6 +18,7 @@ from airflow.models import DagBag
 def dag_bag():
     """Load semua DAG dari folder dags (Astro, Docker, atau CI host)."""
     import os
+
     for folder in ["/usr/local/airflow/dags", "/opt/airflow/dags", "dags"]:
         if os.path.exists(folder):
             return DagBag(dag_folder=folder, include_examples=False)

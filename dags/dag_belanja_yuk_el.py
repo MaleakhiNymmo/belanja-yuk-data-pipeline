@@ -14,20 +14,19 @@ Fitur:
 =============================================================
 """
 
-from datetime import datetime, timedelta
 import logging
+from datetime import datetime, timedelta
 
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.utils.task_group import TaskGroup
-
+from callbacks.slack_alert import slack_alert_on_failure
 from tasks.el_tasks import (
     extract_load_customers,
-    extract_load_products,
     extract_load_orders,
+    extract_load_products,
     get_dwh_conn,
 )
-from callbacks.slack_alert import slack_alert_on_failure
 
 log = logging.getLogger(__name__)
 
@@ -59,7 +58,9 @@ def verify_raw_data(**context):
             counts[t] = count
             log.info(f"📊 raw.{t} row count: {count:,}")
             if count == 0:
-                raise ValueError(f"CRITICAL: Tabel raw.{t} kosong setelah proses Extract & Load!")
+                raise ValueError(
+                    f"CRITICAL: Tabel raw.{t} kosong setelah proses Extract & Load!"
+                )
 
         log.info("✅ Quality Check Sukses: Semua tabel raw terisi data.")
         return counts
@@ -78,8 +79,9 @@ with DAG(
     catchup=False,
     tags=["belanja_yuk", "raw", "extract_load"],
 ) as dag:
-
-    with TaskGroup("extract_and_load", tooltip="Extract from sources and load to raw") as el_group:
+    with TaskGroup(
+        "extract_and_load", tooltip="Extract from sources and load to raw"
+    ) as el_group:
         task_el_customers = PythonOperator(
             task_id="el_customers_crm",
             python_callable=extract_load_customers,

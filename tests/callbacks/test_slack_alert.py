@@ -13,6 +13,7 @@ Memverifikasi:
 import os
 import sys
 from unittest.mock import MagicMock, patch
+
 import pytest
 
 # Pastikan folder dags masuk ke sys.path untuk import callbacks
@@ -21,7 +22,10 @@ for p in ["/usr/local/airflow/dags", "/opt/airflow/dags", dags_path]:
     if os.path.exists(p) and p not in sys.path:
         sys.path.insert(0, p)
 
-from callbacks.slack_alert import format_slack_failure_message, slack_alert_on_failure
+from callbacks.slack_alert import (  # noqa: E402
+    format_slack_failure_message,
+    slack_alert_on_failure,
+)
 
 
 @pytest.fixture
@@ -99,7 +103,9 @@ def test_slack_alert_dispatches_when_webhook_configured(mock_context, monkeypatc
 
 def test_slack_alert_graceful_on_network_error(mock_context, monkeypatch):
     """Pastikan jika webhook Slack timeout/down, worker tidak crash fatal."""
-    monkeypatch.setenv("SLACK_WEBHOOK_URL", "https://hooks.slack.com/services/T00/B00/X00")
+    monkeypatch.setenv(
+        "SLACK_WEBHOOK_URL", "https://hooks.slack.com/services/T00/B00/X00"
+    )
 
     with patch("requests.post", side_effect=Exception("Connection refused")):
         # Harus selesai tanpa unhandled exception
