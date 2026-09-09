@@ -1,4 +1,4 @@
-# ??? Arsitektur & Keputusan Desain — Belanja Yuk Data Pipeline
+# ??? Arsitektur & Keputusan Desain â€” Belanja Yuk Data Pipeline
 
 > **Dokumen ini adalah catatan keputusan desain (Architecture Decision Records / ADR)**
 > yang dibuat selama sesi diskusi awal. Update dokumen ini setiap ada perubahan arsitektur.
@@ -12,7 +12,7 @@
 | **Nama** | Belanja Yuk Data Pipeline |
 | **Tipe** | Portfolio Project (Dummy / Fiktif) |
 | **Peran** | Data Engineer |
-| **Stack utama** | Python · Airflow · dbt Core · Postgres · MongoDB |
+| **Stack utama** | Python Â· Airflow Â· dbt Core Â· Postgres Â· MongoDB |
 | **Tujuan** | Pipeline ELT otomatis harian: 3 source ? DWH ? model analytics |
 
 ---
@@ -37,16 +37,16 @@ MARTS (siap di-query analyst)
 
 ---
 
-## ?? Infrastructure — Docker Services
+## ?? Infrastructure â€” Docker Services
 
 | Container | Image | Port (Host) | Port (Internal) | Keterangan |
 |---|---|---|---|---|
-| `byk_postgres_meta` | postgres:15 | — | 5432 | Airflow metadata DB |
+| `byk_postgres_meta` | postgres:15 | â€” | 5432 | Airflow metadata DB |
 | `byk_postgres_dwh` | postgres:15 | **5433** | 5432 | Data Warehouse |
 | `byk_mongo_orders` | mongo:7 | **27018** | 27017 | Orders source |
 | `byk_airflow_webserver` | custom | **8081** | 8080 | UI Airflow |
-| `byk_airflow_scheduler` | custom | — | — | Scheduler internal |
-| `byk_airflow_init` | custom | — | — | One-time init |
+| `byk_airflow_scheduler` | custom | â€” | â€” | Scheduler internal |
+| `byk_airflow_init` | custom | â€” | â€” | One-time init |
 
 > **?? Kenapa port-nya beda?**
 > Kamu sedang magang dan aktif pakai Astro Airflow Docker setiap hari.
@@ -58,7 +58,7 @@ MARTS (siap di-query analyst)
 
 ## ??? Database Layer
 
-### Postgres DWH — 3-Layer Schema
+### Postgres DWH â€” 3-Layer Schema
 
 | Schema | Isi | Diisi oleh |
 |---|---|---|
@@ -66,7 +66,7 @@ MARTS (siap di-query analyst)
 | `staging` | Data di-clean, di-cast type, di-rename | dbt staging models |
 | `marts` | Fact & dimension tables siap pakai | dbt mart models |
 
-### MongoDB — Orders Collection
+### MongoDB â€” Orders Collection
 
 - **Database:** `belanja_yuk_orders`
 - **Collection:** `orders`
@@ -114,17 +114,18 @@ MARTS (siap di-query analyst)
 
 ## ??? Roadmap Pengerjaan
 
-- [x] Step 1 — Fondasi: Docker Compose, struktur folder, git init
-- [x] Step 1.5 — Arsitektur decision + MongoDB service
-- [x] Step 2 — Generate data dummy (Faker)
-- [ ] Step 3 — Extract & Load DAG
-- [ ] Step 4 — dbt project setup + models
-- [ ] Step 5 — Orchestration lanjutan (Sensor, Branch, TaskGroup)
-- [ ] Step 6 — Testing (dbt tests + pytest)
-- [ ] Step 7 — Error handling & alerting
-- [ ] Step 8 — CI/CD GitHub Actions
-- [ ] Step 9 — Dokumentasi & polish
+- [x] Step 1 â€” Fondasi: Docker Compose, struktur folder, git init
+- [x] Step 1.5 â€” Arsitektur decision + MongoDB service
+- [x] Step 2 â€” Generate data dummy (Faker)
+- [x] Step 3 â€” Extract & Load DAG
+- [x] Step 4 â€” dbt project setup + models
+- [x] Step 5 â€” Orchestration lanjutan (Sensor, Branch, TaskGroup)
+- [x] Step 6 â€” Testing (dbt tests + pytest)
+- [x] Step 7 â€” Error handling & alerting
+- [x] Step 7.5 â€” Astro Runtime 3.3-6 (Airflow 3) migration
+- [x] Step 8 â€” CI/CD GitHub Actions
+- [x] Step 9 â€” Dokumentasi & polish (Bilingual README.md & README_ID.md)
 
 ---
 
-*Last updated: Step 1.5 — Architecture decisions finalized*
+*Last updated: Step 9 â€” Bilingual Showcase Documentation finalized*

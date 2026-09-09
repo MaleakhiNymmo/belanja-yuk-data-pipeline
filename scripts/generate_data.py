@@ -393,24 +393,32 @@ def insert_orders_to_mongo(orders: list[dict]) -> dict:
     log.info(f"🍃 Connecting to MongoDB: {MONGO_URI.split('@')[-1]} ...")
 
     try:
-        client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=10_000)
+        client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=3_000)
         client.admin.command("ping")   # test connection
         log.info("  → Connected!")
-    except mongo_errors.ServerSelectionTimeoutError as e:
-        log.error(f"  ❌ Gagal connect ke MongoDB: {e}")
-        log.error("     Pastikan container byk_mongo_orders sudah running.")
-        log.error("     Jalankan: docker compose up -d mongo_orders")
-        raise
+    except Exception as e:
+        try:
+            host = os.getenv("MONGO_HOST", "mongo_orders")
+            port = os.getenv("MONGO_PORT", "27017")
+            client = MongoClient(f"mongodb://{host}:{port}", serverSelectionTimeoutMS=10_000)
+            client.admin.command("ping")
+            log.info("  → Connected (unauth fallback)!")
+        except Exception as inner_e:
+            log.error(f"  ❌ Gagal connect ke MongoDB: {inner_e}")
+            log.error("     Pastikan container byk_mongo_orders sudah running.")
+            raise
 
     db         = client[MONGO_DB]
     collection = db[MONGO_COLLECTION]
 
-    # Drop existing data biar idempotent (aman dijalankan ulang)
-    existing = collection.count_documents({})
-    if existing > 0:
-        log.warning(f"  ⚠️  Collection sudah ada {existing} dokumen — akan di-replace.")
-        collection.drop()
-        log.info("  → Collection di-drop, insert ulang dari awal.")
+    # Reset collection agar idempotent & hapus unique index lama jika ada
+    collection.drop()
+    log.info("  → Collection di-reset.")
+
+    # Buat index non-unique untuk performa query extract
+    collection.create_index([("order_id", 1)])
+    collection.create_index([("customer_id", 1)])
+    collection.create_index([("order_date", 1)])
 
     # Batch insert untuk performa (1000 per batch)
     BATCH_SIZE = 1_000
@@ -418,8 +426,11 @@ def insert_orders_to_mongo(orders: list[dict]) -> dict:
 
     for i in range(0, len(orders), BATCH_SIZE):
         batch = orders[i : i + BATCH_SIZE]
-        result = collection.insert_many(batch, ordered=False)
-        total_inserted += len(result.inserted_ids)
+        try:
+            result = collection.insert_many(batch, ordered=False)
+            total_inserted += len(result.inserted_ids)
+        except mongo_errors.BulkWriteError as bwe:
+            total_inserted += bwe.details.get("nInserted", 0)
 
         progress = min(i + BATCH_SIZE, len(orders))
         log.info(f"  → Inserted {progress:,}/{len(orders):,} orders ...")

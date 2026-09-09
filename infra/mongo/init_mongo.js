@@ -37,8 +37,8 @@ db.createCollection("orders", {
   validationAction: "warn"   // warn, bukan error — biar dirty data tetap masuk
 });
 
-// Index untuk performa query Airflow
-db.orders.createIndex({ order_id: 1 }, { unique: true });
+// Index untuk performa query Airflow (non-unique agar dirty data duplikat tetap bisa masuk)
+db.orders.createIndex({ order_id: 1 });
 db.orders.createIndex({ customer_id: 1 });
 db.orders.createIndex({ order_date: 1 });
 db.orders.createIndex({ status: 1 });

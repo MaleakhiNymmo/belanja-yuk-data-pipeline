@@ -1,0 +1,6 @@
+project:
+  name: belanja-yuk
+webserver:
+  port: 8081
+postgres:
+  port: 5434

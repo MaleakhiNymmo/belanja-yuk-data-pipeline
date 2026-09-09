@@ -1,5 +1,3 @@
-version: "3.8"
-
 # ============================================================
 # Belanja Yuk — Data Pipeline Infrastructure
 #
@@ -46,6 +44,7 @@ x-airflow-common: &airflow-common
     - ./data:/opt/airflow/data          # raw CSV/JSON source files
     - ./dbt:/opt/airflow/dbt            # dbt project
     - ./scripts:/opt/airflow/scripts    # helper scripts
+    - ./tests:/opt/airflow/tests        # pytest test suite
   depends_on:
     postgres_meta:
       condition: service_healthy

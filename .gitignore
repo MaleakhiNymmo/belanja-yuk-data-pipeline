@@ -19,7 +19,7 @@ build/
 # dbt artifacts — generate ulang setiap run
 dbt/belanja_yuk/target/
 dbt/belanja_yuk/dbt_packages/
-dbt/belanja_yuk/.user.yml
+**/.user.yml
 
 # OS
 .DS_Store

@@ -1,0 +1,35 @@
+version: 2
+
+sources:
+  - name: raw
+    database: belanja_yuk_dwh
+    schema: raw
+    description: "Landing zone data apa adanya dari source system (CRM, Inventory, MongoDB)"
+    tables:
+      - name: customers
+        description: "Ekspor harian CRM data pelanggan dalam bentuk CSV"
+        columns:
+          - name: customer_id
+            description: "Identifier unik pelanggan (bisa terdapat dirty duplicate di raw)"
+          - name: email
+            description: "Email pelanggan (bisa terdapat dirty format di raw)"
+          - name: signup_date
+            description: "Tanggal registrasi pelanggan"
+
+      - name: products
+        description: "Ekspor katalog produk dari sistem inventory dalam bentuk CSV"
+        columns:
+          - name: product_id
+            description: "Identifier unik produk"
+          - name: price
+            description: "Harga jual produk"
+          - name: cost
+            description: "Harga modal (COGS) produk"
+
+      - name: orders
+        description: "Dokumen transaksi pesanan yang diekstrak dari MongoDB"
+        columns:
+          - name: order_id
+            description: "Identifier order transaksi (bisa terdapat duplikat di raw)"
+          - name: items
+            description: "Array JSONB berisi daftar produk yang dibeli per transaksi"

@@ -2,22 +2,16 @@
 # Custom Airflow Image untuk Belanja Yuk Data Pipeline
 # Base: official apache/airflow:2.9.3
 # Tambahan: dbt-core, psycopg2, faker, pytest, dll
+#
+# Note: git & curl sudah pre-installed di base image,
+# tidak perlu apt-get install lagi.
 # ============================================================
 
 FROM apache/airflow:2.9.3
 
-USER root
-
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    git \
-    curl \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
-
-USER airflow
-
-# Copy requirements dulu (untuk layer caching)
+# Tetap sebagai user airflow (default di base image)
+# Copy requirements dulu (layer caching: kalau requirements.txt
+# tidak berubah, pip install tidak akan diulang)
 COPY requirements.txt /requirements.txt
 
 # Install semua Python dependencies

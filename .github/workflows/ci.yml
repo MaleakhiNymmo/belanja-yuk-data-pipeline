@@ -1,0 +1,85 @@
+name: Belanja Yuk Data Pipeline — CI/CD Quality Gate
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  # =============================================================
+  # JOB 1: CODE QUALITY & LINTING (Ruff)
+  # =============================================================
+  code-quality:
+    name: Code Quality & Linting
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install linter
+        run: pip install ruff
+
+      - name: Run Ruff Linter
+        run: |
+          ruff check dags/ scripts/ tests/ --select E,F,W --ignore E501
+
+  # =============================================================
+  # JOB 2: AIRFLOW DAG INTEGRITY & UNIT TESTS (Pytest)
+  # =============================================================
+  airflow-dag-tests:
+    name: Airflow DAG Integrity & Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install apache-airflow==2.9.3 --constraint "https://raw.githubusercontent.com/apache/airflow/constraints-2.9.3/constraints-3.11.txt"
+          pip install pymongo psycopg2-binary faker requests pytest pytest-mock python-dotenv
+
+      - name: Run Pytest Suite (Pillar 1 & 2)
+        env:
+          PYTHONPATH: .
+        run: |
+          pytest tests/ -v
+
+  # =============================================================
+  # JOB 3: DBT COMPILE & PARSE VALIDATION (Pillar 3 Gate)
+  # =============================================================
+  dbt-validation:
+    name: dbt Model DAG & Schema Parse Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dbt
+        run: |
+          pip install --upgrade pip
+          pip install dbt-core dbt-postgres
+
+      - name: Validate dbt Model References & Syntax
+        run: |
+          cd dbt/belanja_yuk
+          dbt parse --profiles-dir .

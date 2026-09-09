@@ -1,0 +1,86 @@
+services:
+  postgres_dwh:
+    image: postgres:15-alpine
+    container_name: byk_postgres_dwh
+    environment:
+      POSTGRES_USER: dwh_user
+      POSTGRES_PASSWORD: dwh_password
+      POSTGRES_DB: belanja_yuk_dwh
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./infra/sql/init_schemas.sql:/docker-entrypoint-initdb.d/init_schemas.sql
+      - postgres_dwh_data:/var/lib/postgresql/data
+    networks:
+      - default
+      - airflow
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dwh_user -d belanja_yuk_dwh"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  mongo_orders:
+    image: mongo:7.0
+    container_name: byk_mongo_orders
+    ports:
+      - "27018:27017"
+    networks:
+      - default
+      - airflow
+    volumes:
+      - ./infra/mongo/init_mongo.js:/docker-entrypoint-initdb.d/init_mongo.js:ro
+      - mongo_orders_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  scheduler:
+    environment:
+      PYTHONPATH: /usr/local/airflow/dags:/usr/local/airflow
+    volumes:
+      - ./data:/opt/airflow/data
+      - ./data:/usr/local/airflow/data
+      - ./dbt:/opt/airflow/dbt
+      - ./dbt:/usr/local/airflow/dbt
+      - ./scripts:/opt/airflow/scripts
+      - ./scripts:/usr/local/airflow/scripts
+      - ./tests:/opt/airflow/tests
+      - ./tests:/usr/local/airflow/tests
+    depends_on:
+      postgres_dwh:
+        condition: service_healthy
+      mongo_orders:
+        condition: service_healthy
+
+  dag-processor:
+    environment:
+      PYTHONPATH: /usr/local/airflow/dags:/usr/local/airflow
+    volumes:
+      - ./data:/opt/airflow/data
+      - ./data:/usr/local/airflow/data
+      - ./dbt:/opt/airflow/dbt
+      - ./dbt:/usr/local/airflow/dbt
+      - ./scripts:/opt/airflow/scripts
+      - ./scripts:/usr/local/airflow/scripts
+      - ./tests:/opt/airflow/tests
+      - ./tests:/usr/local/airflow/tests
+
+  api-server:
+    environment:
+      PYTHONPATH: /usr/local/airflow/dags:/usr/local/airflow
+    volumes:
+      - ./data:/opt/airflow/data
+      - ./data:/usr/local/airflow/data
+      - ./dbt:/opt/airflow/dbt
+      - ./dbt:/usr/local/airflow/dbt
+      - ./scripts:/opt/airflow/scripts
+      - ./scripts:/usr/local/airflow/scripts
+      - ./tests:/opt/airflow/tests
+      - ./tests:/usr/local/airflow/tests
+
+volumes:
+  postgres_dwh_data:
+  mongo_orders_data:

@@ -1,0 +1,14 @@
+belanja_yuk:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: "{{ env_var('DWH_POSTGRES_HOST', 'postgres_dwh') }}"
+      user: "{{ env_var('DWH_POSTGRES_USER', 'dwh_user') }}"
+      password: "{{ env_var('DWH_POSTGRES_PASSWORD', 'dwh_password') }}"
+      port: "{{ env_var('DWH_POSTGRES_PORT', '5432') | int }}"
+      dbname: "{{ env_var('DWH_POSTGRES_DB', 'belanja_yuk_dwh') }}"
+      schema: public
+      threads: 4
+      keepalives_idle: 0
+      connect_timeout: 10

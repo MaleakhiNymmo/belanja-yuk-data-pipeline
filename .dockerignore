@@ -1,0 +1,11 @@
+.git
+.gitignore
+.astro
+.pytest_cache
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+logs/
+target/
+dbt_packages/
