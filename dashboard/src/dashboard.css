@@ -503,79 +503,98 @@ h1, h2, h3, h4, .display-num {
   white-space: nowrap;
 }
 
-/* Kimball Case Study Spotlight (Dark Graphite Showcase Band) */
-.kimball-spotlight-band {
-  background-color: var(--color-graphite);
-  color: var(--color-graphite-ink);
-  border: 1px solid var(--color-graphite-rule);
-  border-radius: var(--radius-lg);
-  padding: var(--space-8);
-  margin-bottom: var(--space-8);
-  position: relative;
-  overflow: hidden;
-}
-
-.kimball-spotlight-band::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, var(--color-accent), #38bdf8);
-}
-
-.kimball-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: var(--space-4);
-  margin-bottom: var(--space-6);
-}
-
-.kimball-title-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background-color: rgba(59, 130, 246, 0.2);
-  color: #60a5fa;
-  border: 1px solid rgba(59, 130, 246, 0.4);
-  padding: 3px 10px;
-  border-radius: var(--radius-sm);
-  font-family: var(--font-display);
-  font-size: 11.5px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  margin-bottom: var(--space-2);
-}
-
-.kimball-grid {
+/* Kimball Architectural Case Study Panel (Standard Dashboard Theme) */
+.kimball-kpi-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: var(--space-6);
+  gap: 1px;
+  background-color: var(--color-rule);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  margin-bottom: var(--space-4);
 }
 
 @media (max-width: 768px) {
-  .kimball-grid {
+  .kimball-kpi-grid {
     grid-template-columns: 1fr;
   }
 }
 
-.kimball-box {
-  background-color: var(--color-graphite-surface);
-  border: 1px solid var(--color-graphite-rule);
+.kimball-kpi-cell {
+  background-color: var(--color-paper-surface);
+  padding: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: background-color 0.15s ease;
+}
+
+.kimball-kpi-cell:hover {
+  background-color: var(--color-paper);
+}
+
+.kimball-reconcile-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background-color: var(--color-paper-surface);
+  border: 1px solid var(--color-rule);
   border-radius: var(--radius-md);
+  font-size: 12.5px;
+  color: var(--color-ink-muted);
+}
+
+/* Technical Tradeoff Grid */
+.kimball-tradeoff-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background-color: var(--color-rule);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+@media (max-width: 768px) {
+  .kimball-tradeoff-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.kimball-tradeoff-cell {
+  background-color: var(--color-paper-surface);
   padding: var(--space-6);
 }
 
-.kimball-stat-val {
-  font-family: var(--font-display);
-  font-size: 28px;
-  font-weight: 700;
-  color: white;
-  margin: var(--space-2) 0;
+/* Clean Code Box */
+.code-editor-box {
+  background-color: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.code-editor-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  background-color: #090d16;
+  border-bottom: 1px solid #1e293b;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: #94a3b8;
+}
+
+.code-editor-body {
+  padding: 14px 16px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.7;
+  color: #e2e8f0;
+  overflow-x: auto;
 }
 
 /* Data Mart Table */
