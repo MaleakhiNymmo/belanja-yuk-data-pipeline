@@ -7,12 +7,15 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-336791?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-7.0-47A248?logo=mongodb&logoColor=white)](https://www.mongodb.com/)
 [![Python](https://img.shields.io/badge/Python-3.11%20%7C%203.12%20%7C%203.14-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![React](https://img.shields.io/badge/React-18.3.1-61DAFB?logo=react&logoColor=black)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.5-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Vite](https://img.shields.io/badge/Vite-5.4-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
 
 [English](README.md) | [Bahasa Indonesia](README_ID.md)
 
 ---
 
-Pipeline data ELT otomatis dari hulu ke hilir untuk platform e-commerce fiktif ("Belanja Yuk"). Sistem ini mengekstrak data transaksi dari MongoDB dan batch master dari file CSV, memuatnya ke landing zone PostgreSQL Data Warehouse, mentransformasikannya menjadi data mart dimensional menggunakan dbt Core, serta menegakkan pengujian kualitas data otomatis menggunakan orkestrasi Apache Airflow 3 dan CI/CD GitHub Actions.
+Pipeline data ELT otomatis dari hulu ke hilir untuk platform e-commerce fiktif ("Belanja Yuk"). Sistem ini mengekstrak data transaksi dari MongoDB dan batch master dari file CSV, memuatnya ke landing zone PostgreSQL Data Warehouse, mentransformasikannya menjadi data mart dimensional menggunakan dbt Core, menegakkan pengujian kualitas data otomatis menggunakan orkestrasi Apache Airflow 3 dan CI/CD GitHub Actions, serta menyajikan wawasan analitik dimensional melalui Web Analytics Dashboard interaktif (React + Vite).
 
 ```
                       +-------------------+
@@ -50,6 +53,14 @@ Pipeline data ELT otomatis dari hulu ke hilir untuk platform e-commerce fiktif (
                | Quality Gate & Circuit Breaker   |
                | - 19 dbt data tests dalam DAG    |
                | - Slack webhook on failure       |
+               +----------------+-----------------+
+                                |
+                                v (Ekspor Snapshot Statis)
+               +----------------------------------+
+               | Lapisan Penyajian Hilir          |
+               | - Web Analytics Dashboard        |
+               | - React 18 · TypeScript · Vite   |
+               | - KPI Mart, Tren & Audit Kimball |
                +----------------------------------+
 ```
 
@@ -137,6 +148,7 @@ Catatan keputusan arsitektur (Architecture Decision Records / ADR) lengkap dapat
 | Transformasi | dbt Core 1.8.2 | Transformasi modular berbasis SQL dengan pelacakan silsilah (lineage) dan pengujian skema bawaan |
 | Data warehouse | PostgreSQL 15 | Database relasional dengan performa stabil, indexing matang, dan dukungan tipe native JSONB |
 | Database sumber | MongoDB 7.0 | Document store untuk simulasi transaksi microservice berbasis dokumen dinamis |
+| UI Analitik | React 18 · TypeScript · Vite | Dashboard eksekutif interaktif untuk visualisasi KPI data mart, tren omzet, breakdown kategori, dan pembuktian audit Kimball Unknown Member |
 | Generator data | Python Faker | Penghasil data sintetis dengan skenario data kotor terencana untuk pengujian kualitas |
 | Kualitas kode | Ruff & Pytest | Linter berkecepatan tinggi dan pengujian otomatis untuk DAG, fungsi ekstraksi, dan callback |
 | CI/CD | GitHub Actions | Eksekusi otomatis seluruh tahapan validasi pada setiap commit |
@@ -164,6 +176,24 @@ raw (Landing Zone)  ──>  staging (Views)  ──>  intermediate (Ephemeral/T
 | `dim_products` | Dimensi | 1 baris per `product_id` | Katalog produk, perbandingan harga beli vs harga jual, status stok (`Out of Stock`, `Low Stock`, `Healthy Stock`), dan total unit terjual. |
 | `fact_order_items` | Fakta | 1 baris per item pesanan | Fakta transaksional per item pesanan mencakup omzet, COGS, gross margin, audit tracking (`raw_customer_id`), dan flag keanggotaan. |
 | `fct_daily_sales` | Fact Mart | 1 baris per tanggal, kategori, metode bayar, kanal | Agregasi harian untuk laporan eksekutif mencakup omzet kotor, omzet bersih, jumlah pesanan, total kuantitas, dan margin laba. |
+
+---
+
+## Web analytics dashboard (Lapisan penyajian hilir)
+
+Untuk mendemonstrasikan konsumsi analitik nyata dari data mart dimensional yang telah dibangun, repositori ini menyertakan dashboard eksekutif interaktif di direktori [`dashboard/`](dashboard/).
+
+> [!NOTE]
+> **Catatan Arsitektur & Konektivitas Data:**
+> Web Analytics Dashboard ini berjalan sepenuhnya di sisi klien (*client-side*) menggunakan file snapshot statis (`dashboard/src/data/dashboard_data.json`) yang diekspor langsung dari tabel mart PostgreSQL (`dim_customers`, `dim_products`, `fact_order_items`, `fct_daily_sales`).
+> **Dashboard ini sengaja tidak terhubung secara live/otomatis ke database** demi kepraktisan demo lokal instan tanpa dependensi (*zero-dependency*), keamanan kredensial, serta portabilitas hosting tanpa perlu menyalakan container PostgreSQL secara terus-menerus.
+
+**Fitur Utama Dashboard:**
+- **Grid KPI Eksekutif:** Ringkasan instan omzet kotor, omzet bersih, total pesanan, unit terjual, dan margin laba kotor.
+- **Analisis Tren Penjualan:** Grafik interaktif visualisasi volume transaksi dan pergerakan omzet harian.
+- **Breakdown Dimensional:** Proporsi kontribusi omzet berdasarkan kanal pemasaran dan kategori produk.
+- **Widget Showcase Kimball Unknown Member:** Pembuktian visual rekonsiliasi finansial bahwa 100% omzet tetap tercatat lengkap dengan audit tracking transaksi tamu (*guest checkout*).
+- **Drawer Kesehatan Pipeline:** Visibilitas status eksekusi DAG Airflow dan quality gate dbt langsung dari antarmuka web.
 
 ---
 
@@ -218,8 +248,16 @@ porto-fake-project/
 │   │   ├── el_customers.py        # Ekstraksi dan pemuatan data CSV CRM
 │   │   ├── el_products.py         # Ekstraksi dan pemuatan data CSV inventori
 │   │   └── el_orders.py           # Ekstraksi MongoDB dan penyimpanan JSONB
-│   ├── dag_belanja_yuk_el.py      # DAG ekstraksi dan pemuatan mandiri
+│   ├── dag_belanja_yuk_el.py      # Standalone extract-and-load DAG
 │   └── dag_belanja_yuk_master.py  # Master pipeline: sensor, branch, EL, dbt, quality gate
+├── dashboard/                     # Web Analytics Dashboard interaktif (React + TypeScript + Vite)
+│   ├── src/
+│   │   ├── components/            # Komponen visual chart, kartu KPI, dan drawer modal
+│   │   ├── data/                  # Snapshot statis data mart (dashboard_data.json)
+│   │   ├── App.tsx                # Kontainer utama dashboard & manajemen state filter
+│   │   └── tokens.css             # Design tokens & styling CSS
+│   ├── package.json               # Dependensi Node.js & script build
+│   └── vite.config.ts             # Konfigurasi bundler Vite
 ├── data/
 │   └── raw/                       # Direktori landing file CSV sintetis
 ├── dbt/
@@ -348,6 +386,20 @@ make dbt-test
 # Generate katalog dan grafik silsilah data:
 docker exec -it belanja-yuk_6ed815-dag-processor-1 bash -c "cd /usr/local/airflow/dbt/belanja_yuk && dbt docs generate"
 ```
+
+### Langkah 7: Menjalankan Web Analytics Dashboard
+
+Untuk melihat visualisasi analitik data mart di antarmuka web interaktif:
+
+```bash
+cd dashboard
+npm install
+npm run dev
+```
+
+Buka `http://localhost:5173` di browser Anda.
+
+*(Catatan: Sebagaimana dijelaskan pada catatan arsitektur, dashboard menggunakan snapshot data statis hasil ekspor mart, sehingga dapat dijalankan secara mandiri tanpa harus menyalakan container Docker.)*
 
 ---
 

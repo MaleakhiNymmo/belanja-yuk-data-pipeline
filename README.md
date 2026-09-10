@@ -7,12 +7,15 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-336791?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-7.0-47A248?logo=mongodb&logoColor=white)](https://www.mongodb.com/)
 [![Python](https://img.shields.io/badge/Python-3.11%20%7C%203.12%20%7C%203.14-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![React](https://img.shields.io/badge/React-18.3.1-61DAFB?logo=react&logoColor=black)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.5-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Vite](https://img.shields.io/badge/Vite-5.4-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
 
 [English](README.md) | [Bahasa Indonesia](README_ID.md)
 
 ---
 
-An end-to-end ELT data pipeline for a simulated e-commerce platform ("Belanja Yuk"). The system extracts transaction records from MongoDB and master batches from CSV files, loads them into a PostgreSQL data warehouse landing zone, transforms them into dimensional marts with dbt Core, and enforces data quality checks at runtime using Apache Airflow 3 orchestration and GitHub Actions CI/CD.
+An end-to-end ELT data pipeline for a simulated e-commerce platform ("Belanja Yuk"). The system extracts transaction records from MongoDB and master batches from CSV files, loads them into a PostgreSQL data warehouse landing zone, transforms them into dimensional marts with dbt Core, enforces data quality checks at runtime using Apache Airflow 3 orchestration and GitHub Actions CI/CD, and serves dimensional insights through an interactive Web Analytics Dashboard (React + Vite).
 
 ```
                       +-------------------+
@@ -50,6 +53,14 @@ An end-to-end ELT data pipeline for a simulated e-commerce platform ("Belanja Yu
                | Quality Gate & Circuit Breaker   |
                | - 19 dbt data tests in DAG       |
                | - Slack webhook on failure       |
+               +----------------------------------+
+                                |
+                                v (Static Mart Snapshot)
+               +----------------------------------+
+               | Downstream Presentation Layer    |
+               | - Web Analytics Dashboard        |
+               | - React 18 · TypeScript · Vite   |
+               | - KPI Grid, Trends & Kimball UI  |
                +----------------------------------+
 ```
 
@@ -137,6 +148,7 @@ Detailed architectural decision records (ADRs) are documented in [ARCHITECTURE.m
 | Transformation | dbt Core 1.8.2 | Modular SQL transformations with version-controlled lineage and built-in schema testing |
 | Data warehouse | PostgreSQL 15 | Relational storage with native JSONB support, window functions, and indexing |
 | Source database | MongoDB 7.0 | Document store simulating modern microservice transaction persistence |
+| Downstream UI | React 18 · TypeScript · Vite | Interactive web analytics dashboard for visualizing dimensional mart KPIs, trend analysis, and Kimball Unknown Member audit trails |
 | Data generator | Python Faker | Configurable synthetic generator with intentional data anomalies for testing |
 | Code quality | Ruff & Pytest | Fast Python linting and regression testing for DAGs, operators, and callbacks |
 | CI/CD | GitHub Actions | Automated pipeline validation on every commit |
@@ -164,6 +176,24 @@ raw (Landing Zone)  ──>  staging (Views)  ──>  intermediate (Ephemeral/T
 | `dim_products` | Dimension | 1 row per `product_id` | Catalog master, purchase cost versus retail price, inventory status (`Out of Stock`, `Low Stock`, `Healthy Stock`), and total units sold. |
 | `fact_order_items` | Fact | 1 row per order item | Transactional line-item fact with revenue, COGS, gross profit margin, audit foreign keys (`raw_customer_id`), and membership flags. |
 | `fct_daily_sales` | Fact Mart | 1 row per date, category, payment method, channel | Daily business summary reporting gross revenue, net revenue, total orders, units sold, and profit margins. |
+
+---
+
+## Web analytics dashboard (Downstream consumption layer)
+
+To demonstrate practical business consumption of the modeled dimensional marts, the repository includes an interactive executive web dashboard located in [`dashboard/`](dashboard/).
+
+> [!NOTE]
+> **Data Connectivity & Architecture Disclaimer:**
+> The web analytics dashboard runs entirely client-side and consumes an offline static snapshot (`dashboard/src/data/dashboard_data.json`) exported directly from the PostgreSQL dimensional marts (`dim_customers`, `dim_products`, `fact_order_items`, `fct_daily_sales`).
+> **It is deliberately decoupled from live database connections** to guarantee instant, zero-setup local previews, secure portable distribution, and hosting without exposing internal database credentials or requiring a persistent PostgreSQL container during UI demos.
+
+**Key Dashboard Capabilities:**
+- **Executive KPI Grid:** Instant summary of Gross Revenue, Net Revenue, Total Orders, Units Sold, and Gross Profit Margin.
+- **Interactive Sales Trends:** Time-series charts visualizing daily transaction volume and revenue trajectory.
+- **Dimensional Breakdown:** Revenue contribution across sales channels and product categories.
+- **Kimball Unknown Member Showcase Widget:** Visual verification of financial reconciliation showing 100% revenue retention and guest checkout transaction audit tracking (`is_registered_customer = FALSE`).
+- **Pipeline Health Drawer:** UI visibility into Airflow DAG run states, task statuses, and dbt quality gate results.
 
 ---
 
@@ -220,6 +250,14 @@ porto-fake-project/
 │   │   └── el_orders.py           # MongoDB ingestion with JSONB persistence
 │   ├── dag_belanja_yuk_el.py      # Standalone extract-and-load DAG
 │   └── dag_belanja_yuk_master.py  # Master pipeline: sensors, branching, EL, dbt, tests
+├── dashboard/                     # Web Analytics Dashboard (React + TypeScript + Vite)
+│   ├── src/
+│   │   ├── components/            # Visual chart widgets, KPI cards, and drawer modals
+│   │   ├── data/                  # Static mart snapshot (dashboard_data.json)
+│   │   ├── App.tsx                # Main dashboard container & filter state
+│   │   └── tokens.css             # CSS design tokens & theme styling
+│   ├── package.json               # Node.js dependencies and build scripts
+│   └── vite.config.ts             # Vite bundler configuration
 ├── data/
 │   └── raw/                       # Staging directory for generated daily CSVs
 ├── dbt/
@@ -348,6 +386,20 @@ make dbt-test
 # Generate catalog and lineage documentation:
 docker exec -it belanja-yuk_6ed815-dag-processor-1 bash -c "cd /usr/local/airflow/dbt/belanja_yuk && dbt docs generate"
 ```
+
+### Step 7: Launch the Web Analytics Dashboard
+
+To inspect dimensional mart aggregations in the interactive web interface:
+
+```bash
+cd dashboard
+npm install
+npm run dev
+```
+
+Open `http://localhost:5173` in your browser.
+
+*(Note: As highlighted in the architecture disclaimer, the dashboard operates on the exported static JSON mart snapshot, allowing it to run independently even when Docker containers are turned off.)*
 
 ---
 
