@@ -1,0 +1,64 @@
+/* Hallmark · pre-emit critique: P5 H5 E5 S5 R5 V5 */
+/* Theme: Cobalt — Modern-Minimal Data Engineering Instrument Panel */
+
+:root {
+  /* Color Tokens (OKLCH with CSS custom property fallbacks) */
+  --color-paper: oklch(98.5% 0.004 250);
+  --color-paper-subtle: oklch(96.5% 0.008 250);
+  --color-paper-surface: oklch(100% 0 0);
+  --color-ink: oklch(24% 0.02 258);
+  --color-ink-muted: oklch(48% 0.02 258);
+  --color-ink-faint: oklch(72% 0.015 258);
+
+  /* Electric Cobalt Accent (Signal Ink < 5% viewport) */
+  --color-accent: oklch(58% 0.20 256);
+  --color-accent-subtle: oklch(58% 0.20 256 / 0.10);
+  --color-accent-hover: oklch(52% 0.22 256);
+
+  /* Semantic Inks */
+  --color-success: oklch(62% 0.18 145);
+  --color-success-bg: oklch(62% 0.18 145 / 0.12);
+  --color-warning: oklch(72% 0.17 80);
+  --color-warning-bg: oklch(72% 0.17 80 / 0.12);
+  --color-danger: oklch(58% 0.22 25);
+  --color-danger-bg: oklch(58% 0.22 25 / 0.12);
+
+  /* Structure & Hairlines — Hairlines do the work */
+  --color-rule: oklch(88% 0.01 250);
+  --color-rule-faint: oklch(92% 0.008 250);
+  --color-rule-strong: oklch(76% 0.015 250);
+
+  /* Showcase Dark Graphite Band */
+  --color-graphite: oklch(18% 0.016 260);
+  --color-graphite-surface: oklch(23% 0.018 260);
+  --color-graphite-rule: oklch(32% 0.02 260);
+  --color-graphite-ink: oklch(95% 0.005 250);
+  --color-graphite-muted: oklch(68% 0.015 250);
+
+  /* Typography Stacks: Modern, Calm, Balanced Sans-Serif */
+  --font-display: "Plus Jakarta Sans", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-body: "Plus Jakarta Sans", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Technical Radii */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+
+  /* Shadows — minimal, depth from borders */
+  --shadow-subtle: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-elevated: 0 8px 24px -4px rgba(0, 0, 0, 0.08);
+
+  /* Spacing system */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* Container bounds */
+  --max-width: 1360px;
+}

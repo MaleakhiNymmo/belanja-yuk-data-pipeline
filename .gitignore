@@ -1,31 +1,61 @@
-# Airflow logs — banyak & auto-generated, jangan di-commit
-logs/
-# Volume data lokal
-data/raw/
-
-# Environment file — berisi secrets!
+# Environment files — berisi password & credentials!
 .env
+.env*.local
+!.env.example
+
+# AI Agents & Antigravity Workflows (Private)
+.agents/
+.gemini/
+PORTFOLIO_WEBSITE_SHOWCASE_PLAN.md
+PORTFOLIO_CASE_STUDY.md
+
+# Frontend / Web Dashboard
+node_modules/
+**/node_modules/
+dashboard/dist/
+dashboard/.vite/
+*.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Astro / Astronomer local runtime
+.astro/
+
+# Airflow logs & runtime
+logs/
+*.log
+airflow-webserver.pid
+
+# Data lokal & dumps
+data/raw/
+data/*.parquet
 
 # Python
 __pycache__/
 *.py[cod]
+*$py.class
 *.egg-info/
 .venv/
 venv/
 dist/
 build/
 .pytest_cache/
+.ruff_cache/
 
 # dbt artifacts — generate ulang setiap run
 dbt/belanja_yuk/target/
 dbt/belanja_yuk/dbt_packages/
+dbt/belanja_yuk/logs/
 **/.user.yml
 
 # OS
 .DS_Store
 Thumbs.db
+desktop.ini
 
-# IDE
+# IDE & Editor
 .vscode/
 .idea/
 *.swp
+*.swo
